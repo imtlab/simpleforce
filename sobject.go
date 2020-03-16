@@ -1,10 +1,15 @@
 package simpleforce
 
 import (
+	"bufio"			//	Only needed if FakeGet() uncommented
 	"bytes"
 	"encoding/json"
+	"errors"		//	Only needed if FakeGet() uncommented
+//	"fmt"			//	Only needed if DEBUG uncommented
+	"io/ioutil"		//	Only needed if FakeGet() uncommented
 	"log"
 	"net/http"
+	"os"			//	Only needed if FakeGet() uncommented
 	"strings"
 )
 
@@ -76,6 +81,8 @@ func (obj *SObject) Get(id ...string) *SObject {
 		return nil
 	}
 
+//	fmt.Println(string(data))	//	DEBUG
+
 	err = json.Unmarshal(data, obj)
 	if err != nil {
 		log.Println(logPrefix, "json decode failed,", err)
@@ -83,6 +90,38 @@ func (obj *SObject) Get(id ...string) *SObject {
 	}
 
 	return obj
+}
+
+/*	To aid with testing without depending on the ability to access and edit actual Salesforce records,
+	use this function to Unmarshal the passed local JSON file as if the JSON were gotten from an HTTP request.
+*/
+func (pSObjectInput *SObject) FakeGet(sPathJsonfile string) (pSObjectOutput *SObject, err error) {
+	// Sanity check.
+	if 0 == len(pSObjectInput.Type()) || nil == pSObjectInput.client() {
+		err = errors.New("Incomplete receiver SObject")
+	} else {
+		log.Println("Processing", sPathJsonfile)
+
+		var pFile *os.File
+		if pFile, err = os.Open(sPathJsonfile); nil == err {
+			defer pFile.Close()
+
+			var xBytes []byte
+			if xBytes, err = ioutil.ReadAll(bufio.NewReader(pFile)); nil == err {
+				if err = json.Unmarshal(xBytes, pSObjectInput); nil == err {
+					pSObjectOutput = pSObjectInput
+				} else {
+					log.Println("json.Unmarshal() failed with error:", err)
+				}
+			} else {
+				log.Println("ioutil.ReadAll() failed with error:", err)
+			}
+		} else {
+			log.Printf("os.Open(\"%v\") filed with error: %v", sPathJsonfile, err)
+		}
+	}
+
+	return
 }
 
 // Create posts the JSON representation of the SObject to salesforce to create the entry.
