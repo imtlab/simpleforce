@@ -117,7 +117,7 @@ func (pSObjectInput *SObject) FakeGet(sPathJsonfile string) (pSObjectOutput *SOb
 				log.Println("ioutil.ReadAll() failed with error:", err)
 			}
 		} else {
-			log.Printf("os.Open(\"%v\") filed with error: %v", sPathJsonfile, err)
+			log.Printf("os.Open(\"%v\") failed with error: %v", sPathJsonfile, err)
 		}
 	}
 
